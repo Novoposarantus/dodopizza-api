@@ -50,13 +50,21 @@ def getSchedules(units: list[str], beginFrom: datetime, beginTo: datetime, token
     
     return schedules
 
-def scheduleToDate(schedule, weekMondayDate: datetime) -> object:
-    scheduleDate = weekMondayDate + timedelta(days= strToDateTime(schedule['scheduledShiftStartAtLocal']).weekday())
+def scheduleToDate(schedule, weekMondayFromDate: datetime, weekMondayToDate: datetime) -> object:
+    scheduledShiftStartAtLocal = strToDateTime(schedule['scheduledShiftStartAtLocal'])
+    scheduledShiftEndAtLocal = strToDateTime(schedule['scheduledShiftEndAtLocal'])
+
+    deltaStartDays = (scheduledShiftStartAtLocal.date() - weekMondayFromDate.date()).days
+    deltaEndDays = (scheduledShiftEndAtLocal.date() - weekMondayFromDate.date()).days
+
+    scheduleStartDate = weekMondayToDate + timedelta(days= deltaStartDays)
+    scheduleEndDate = weekMondayToDate + timedelta(days= deltaEndDays)
+
     return {
             'unitId': schedule['unitId'],
             'staffId': schedule['staffId'],
-            'scheduledShiftStartAtLocal': setDate(strToDateTime(schedule['scheduledShiftStartAtLocal']), scheduleDate).strftime(DATE_TIME_FORMAT),
-            'scheduledShiftEndAtLocal': setDate(strToDateTime(schedule['scheduledShiftEndAtLocal']), scheduleDate).strftime(DATE_TIME_FORMAT),
+            'scheduledShiftStartAtLocal': setDate(scheduledShiftStartAtLocal, scheduleStartDate).strftime(DATE_TIME_FORMAT),
+            'scheduledShiftEndAtLocal': setDate(scheduledShiftEndAtLocal, scheduleEndDate).strftime(DATE_TIME_FORMAT),
             'workStationId': schedule['workStationId'],
             'shiftPositionId': schedule['staffShiftPositionId'] if schedule['staffShiftPositionId'] != None else schedule['staffPositionId']
         }
@@ -93,7 +101,7 @@ def copySchedules(
     schedules = getSchedules(
         units=[unit],
         beginFrom=weekMondayFrom.date(),
-        beginTo=weekFromSunday.date(),
+        beginTo=(weekFromSunday + timedelta(days=1)).date(),
         token=token
     )
 
@@ -102,7 +110,7 @@ def copySchedules(
     if not any(schedules):
         return
     
-    schedulesToAdd = list(map(lambda schedule: scheduleToDate(schedule, weekMondayTo), schedules))
+    schedulesToAdd = list(map(lambda schedule: scheduleToDate(schedule, weekMondayFrom, weekMondayTo), schedules))
 
     addSchedules(
         schedules=schedulesToAdd,

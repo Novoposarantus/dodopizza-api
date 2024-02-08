@@ -65,7 +65,7 @@ def deleteSchedulesOnWeek(unit: str, weekMondayDate: datetime):
     schedules = getSchedules(
         units=[unit],
         beginFrom=weekMondayDate.date(),
-        beginTo=weekSundayDate.date(),
+        beginTo=(weekSundayDate + timedelta(days=1)).date(),
         token=token
     )
 
