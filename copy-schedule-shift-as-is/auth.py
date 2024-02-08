@@ -1,0 +1,2 @@
+def authorize() -> str:
+    return ''
