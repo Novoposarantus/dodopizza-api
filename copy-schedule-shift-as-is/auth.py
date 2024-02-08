@@ -1,2 +1,4 @@
+import config
+
 def authorize() -> str:
-    return ''
+    return config.token
