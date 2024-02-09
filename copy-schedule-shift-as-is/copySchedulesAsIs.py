@@ -110,6 +110,12 @@ def copySchedules(
     if not any(schedules):
         return
     
+    print(f'Confirm adding. Y/N')
+    confirmation = input()
+    if confirmation.lower().strip() != 'y':
+        print('adding canceled')
+        return
+    
     schedulesToAdd = list(map(lambda schedule: scheduleToDate(schedule, weekMondayFrom, weekMondayTo), schedules))
 
     addSchedules(
