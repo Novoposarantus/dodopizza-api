@@ -4,6 +4,7 @@ from models.constants import DATE_FORMAT
 from datetime import datetime, timedelta
 from services.apiService import ApiService
 from services.helper import Confirmation
+from models.getScheduleResponse import GetSchedulesResponse
 
 def deleteSchedules(schedulesIds: list[str], token: str) -> None:
     deleted = 0
@@ -22,7 +23,7 @@ def deleteSchedulesOnWeek(unit: str, weekMondayDate: datetime):
     token = auth.authorize()
 
     weekSundayDate = weekMondayDate + timedelta(days=6)
-    schedules = ApiService.getSchedules(
+    schedules: list[GetSchedulesResponse.Schedule] = ApiService.getSchedules(
         units=[unit],
         beginFrom=weekMondayDate.date(),
         beginTo=(weekSundayDate + timedelta(days=1)).date(),
@@ -37,7 +38,7 @@ def deleteSchedulesOnWeek(unit: str, weekMondayDate: datetime):
     if not Confirmation.check('deletion schedules'):
         return
     
-    schedulesIds = list(map(lambda schedule: schedule['id'], schedules))
+    schedulesIds = list((schedule.id for schedule in schedules))
 
     deleteSchedules(schedulesIds, token)
 
