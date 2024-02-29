@@ -23,17 +23,15 @@ def scheduleToDate(schedule: GetSchedulesResponse.Schedule, weekFromMondayDate: 
     return scheduleToAdd
 
 def copySchedules(
+        apiService: ApiService,
         unit: str,
         weekFromMonday: datetime,
         weekToMonday: datetime):
-    token: str = auth.authorize()
-
     weekFromSunday: datetime = weekFromMonday + timedelta(days=6)
-    schedules: list[GetSchedulesResponse.Schedule] = ApiService.getSchedules(
+    schedules: list[GetSchedulesResponse.Schedule] = apiService.getSchedules(
         units=[unit],
         beginFrom=weekFromMonday.date(),
-        beginTo=(weekFromSunday + timedelta(days=1)).date(),
-        token=token
+        beginTo=(weekFromSunday + timedelta(days=1)).date()
     )
 
     print(f'{len(schedules)} schedules loaded from {weekFromMonday.date().strftime(DATE_FORMAT)} to {weekFromSunday.date().strftime(DATE_FORMAT)}')
@@ -46,12 +44,12 @@ def copySchedules(
     
     schedulesToAdd: list[AddSchedulesRequest.Schedule] = [scheduleToDate(schedule, weekFromMonday, weekToMonday) for schedule in schedules]
 
-    ApiService.addSchedules(
-        schedules=schedulesToAdd,
-        token=token
-    )
+    apiService.addSchedules(schedulesToAdd)
 
+token = auth.authorize()
+apiService = ApiService(config.api_url, token)
 copySchedules(
+    apiService=apiService,
     unit= config.unit,
     weekFromMonday= config.copySchedulesFromWeekMonday,
     weekToMonday= config.copySchedulesToWeekMonday,

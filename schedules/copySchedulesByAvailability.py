@@ -11,14 +11,17 @@ import services.auth as auth
 import services.config as config
 
 class CopySchedulesByAvailability:
+    def __init__(self, apiService: ApiService) -> None:
+        self.apiService = apiService
+
     def copySchedules(
+            self,
             unit: str,
             weekFromMonday: datetime,
             weekToMonday: datetime):
-        token: str = auth.authorize()
-
-        schedules = CopySchedulesByAvailability.__getSchedules(unit, weekFromMonday, token)
-        staffAvailabilityPeriods = CopySchedulesByAvailability.__getStaffAvailabilityPeriods(unit, weekToMonday, token)
+        
+        schedules = self.__getSchedules(unit, weekFromMonday)
+        staffAvailabilityPeriods = self.__getStaffAvailabilityPeriods(unit, weekToMonday)
 
         if not any(schedules) or not any(staffAvailabilityPeriods):
             return
@@ -34,18 +37,14 @@ class CopySchedulesByAvailability:
         if not Confirmation.check('adding schedules'):
             return
 
-        ApiService.addSchedules(
-            schedules=schedulesToAdd,
-            token=token
-        )
+        self.apiService.addSchedules(schedulesToAdd)
 
-    def __getSchedules(unit: str, weekFromMonday: datetime, token: str) -> list[GetSchedulesResponse.Schedule]:
+    def __getSchedules(self, unit: str, weekFromMonday: datetime) -> list[GetSchedulesResponse.Schedule]:
         nextWeekMonday: datetime = weekFromMonday + timedelta(days= 7)
-        schedules = ApiService.getSchedules(
+        schedules = self.apiService.getSchedules(
             units= [unit],
             beginFrom= weekFromMonday.date(),
-            beginTo= nextWeekMonday.date(),
-            token= token
+            beginTo= nextWeekMonday.date()
         )
         
         weekFromSunday: datetime = weekFromMonday + timedelta(days= 6)
@@ -53,13 +52,12 @@ class CopySchedulesByAvailability:
 
         return schedules
     
-    def __getStaffAvailabilityPeriods(unit: str, weekToMonday: datetime, token: str) -> list[GetStaffAvailabilityResponse.AvailabilityPeriod]:
+    def __getStaffAvailabilityPeriods(self, unit: str, weekToMonday: datetime) -> list[GetStaffAvailabilityResponse.AvailabilityPeriod]:
         weekToSunday: datetime = weekToMonday + timedelta(days= 6)
-        staffAvailabilityPeriods = ApiService.getStaffAvailability(
+        staffAvailabilityPeriods = self.apiService.getStaffAvailability(
             units=[unit],
             fromDate= weekToMonday.date(),
-            toDate= weekToSunday.date(),
-            token= token
+            toDate= weekToSunday.date()
         )
     
         print(f'{len(staffAvailabilityPeriods)} staff availability periods loaded from {weekToMonday.date().strftime(DATE_FORMAT)} to {weekToSunday.date().strftime(DATE_FORMAT)}')
@@ -159,7 +157,10 @@ class CopySchedulesByAvailability:
         return availablePeriod.staffId if availablePeriod != None else None
 
 
-CopySchedulesByAvailability.copySchedules(
+token = auth.authorize()
+apiService = ApiService(config.api_url, token)
+copySchedulesByAvailability = CopySchedulesByAvailability(apiService)
+copySchedulesByAvailability.copySchedules(
     unit= config.unit,
     weekFromMonday= config.copySchedulesFromWeekMonday,
     weekToMonday= config.copySchedulesToWeekMonday,
